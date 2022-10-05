@@ -95,6 +95,16 @@ function get_neighbor_cell(cell, wall) {
 async function pave_way() {
     let visited = Array(N_CELLS).fill(false);
 
+    function can_visit_neighbour(cell, neighbour_cell, wall) {
+        return !(
+            neighbour_cell < 0
+            || neighbour_cell >= N_CELLS
+            || visited[neighbour_cell]
+            || (wall === EAST && cell % N_COLS === N_COLS - 1)
+            || (wall === WEST && cell % N_COLS === 0)
+        )
+    }
+
     async function dfs(cell) {
         visited[cell] = true;
 
@@ -102,20 +112,11 @@ async function pave_way() {
         shuffle(walls);
         for (let wall of walls) {
             let neighbour_cell = get_neighbor_cell(cell, wall);
-
-            if (
-                neighbour_cell < 0
-                || neighbour_cell >= N_CELLS
-                || visited[neighbour_cell]
-                || (wall === EAST && cell % N_COLS === N_COLS - 1)
-                || (wall === WEST && cell % N_COLS === 0)
-            ) {
-                continue;
+            if (can_visit_neighbour(cell, neighbour_cell, wall)) {
+                WALLS[cell] -= wall;
+                WALLS[neighbour_cell] -= get_opposite_wall(wall);
+                await dfs(neighbour_cell);
             }
-
-            WALLS[cell] -= wall;
-            WALLS[neighbour_cell] -= get_opposite_wall(wall);
-            await dfs(neighbour_cell);
         }
     }
 
