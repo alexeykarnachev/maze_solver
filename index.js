@@ -1,31 +1,37 @@
 ANVAS = null;
 CONTEXT = null;
 
-CANVAS_WIDTH = 800;
-CANVAS_HEIGHT = 600;
-N_COLS = CANVAS_WIDTH / 25;
-N_ROWS = CANVAS_HEIGHT / 25;
+CANVAS_WIDTH = 1800;
+CANVAS_HEIGHT = 1600;
+N_COLS = CANVAS_WIDTH / 10;
+N_ROWS = CANVAS_HEIGHT / 10;
 N_CELLS = N_ROWS * N_COLS;
 
 CELL_WIDTH = CANVAS_WIDTH / N_COLS;
 CELL_HEIGHT = CANVAS_HEIGHT / N_ROWS;
+if (CELL_WIDTH !== CELL_HEIGHT) {
+    throw(`CELL_WIDTH must be equal to CELL_HEIGHT`)
+}
 
 BACKGROUND_COLOR = "#888888";
 WALL_COLOR = "#282828";
-PATH_COLOR = "#fe8019";
-DFS_COLOR = "green";
-BFS_COLOR = "blue";
-BRANCH_CIRCLE_COLOR = "#cc241d";
-BRANCH_CIRCLE_RADIUS = 5.0;
+ALGO_COLOR = {dfs: "#fb4934", bfs: "#b8bb26"}
+PATH_ALPHA = 0.2;
 ANIMATION_WAIT_TIME = 1.0;
 
-BRANCH_P = 0.3;
-LOOP_P = 1.0;
+
+BRANCH_P = 0.1;
+LOOP_P = 0.02;
 WALLS = Array(N_CELLS).fill(15);
 NORTH = 1;
 EAST = 2;
 SOUTH = 4;
 WEST = 8;
+
+function with_alpha(color, opacity) {
+    const _opacity = Math.round(Math.min(Math.max(opacity || 1, 0), 1) * 255);
+    return color + _opacity.toString(16).toUpperCase();
+}
 
 function get_cell_coords(cell) {
     let row = Math.floor(cell / N_COLS);
@@ -97,8 +103,9 @@ function draw_grid_walls() {
     }
 }
 
-function draw_line(from, to, color) {
+function draw_line(from, to, color, width) {
     CONTEXT.strokeStyle = color; 
+    CONTEXT.lineWidth = width;
     CONTEXT.beginPath();
     CONTEXT.moveTo(from[0], from[1]);
     CONTEXT.lineTo(to[0], to[1]);
@@ -110,6 +117,64 @@ function draw_circle(center, radius, color) {
     CONTEXT.arc(center[0], center[1], radius, 0, 2 * Math.PI, false);
     CONTEXT.fillStyle = color;
     CONTEXT.fill();
+}
+
+function draw_path_step(cell1, cell2, color) {
+    let width = CELL_WIDTH * 0.25;
+    draw_line(get_cell_middle(cell1), get_cell_middle(cell2), color, width);
+}
+
+async function draw_results(results) {
+    let colors = [];
+    let algos = [];
+    let paths = [];
+    let histories = [];
+
+    for (let algo in results) {
+        colors.push(ALGO_COLOR[algo]);
+        algos.push(algo);
+        paths.push(results[algo].path);
+        histories.push(results[algo].history);
+    }
+
+    let n_histories_done = 0;
+    while (n_histories_done !== histories.length) {
+        for (let i = 0; i < histories.length; ++i) {
+            let history = histories[i];
+            if (history.length === 0) {
+                continue;
+            }
+            let cell = history.pop();
+            n_histories_done += history.length === 0;
+
+            fill_cell(cell, with_alpha(colors[i], 0.2));
+            draw_cell_walls(cell);
+            await wait(ANIMATION_WAIT_TIME);
+        }
+    }
+
+    let n_paths_done = 0;
+    while (n_paths_done !== paths.length) {
+        for (let i = 0; i < paths.length; ++i) {
+            let path = paths[i];
+            if (path.length === 0) {
+                continue;
+            }
+            let cell = path.pop();
+            n_paths_done += path.length === 0;
+
+            draw_path_step()
+            fill_cell(cell, with_alpha(colors[i], 0.8));
+            draw_cell_walls(cell);
+            await wait(ANIMATION_WAIT_TIME);
+        }
+    }
+}
+
+function fill_cell(cell, color) {
+    [x0, y0, x1, y1] = get_cell_coords(cell);
+    CONTEXT.fillStyle = color;
+    CONTEXT.fillRect(x0, y0, CELL_WIDTH, CELL_HEIGHT);
 }
 
 function get_opposite_wall(wall) {
@@ -219,19 +284,21 @@ async function make_loops(loop_p) {
 
 async function solve_maze_dfs() {
     let visited = Array(N_CELLS).fill(false);
+    let path = [];
+    let history = [0];
 
     async function walk(cell) {
         visited[cell] = true;
         if (cell === N_CELLS - 1) {
             return true;
         }
-        let paths = get_cell_paths(cell);
-        for (let path of paths) {
-            let neighbour_cell = get_cell_neighbour(cell, path);
-            if (!visited[neighbour_cell] && can_visit_neighbour(cell, neighbour_cell, path, visited)) {
-                draw_line(get_cell_middle(cell), get_cell_middle(neighbour_cell), DFS_COLOR);
-                await wait(ANIMATION_WAIT_TIME);
+        let doors = get_cell_doors(cell);
+        for (let door of doors) {
+            let neighbour_cell = get_cell_neighbour(cell, door);
+            if (!visited[neighbour_cell] && can_visit_neighbour(cell, neighbour_cell, door, visited)) {
+                history.push(neighbour_cell);
                 if (await walk(neighbour_cell)) {
+                    path.push(neighbour_cell);
                     return true;
                 };
             }
@@ -240,32 +307,49 @@ async function solve_maze_dfs() {
     }
 
     await walk(0);
+    path.push(0);
+    return {path: path.reverse(), history: history.reverse()};
 }
 
 async function solve_maze_bfs() {
     let visited = Array(N_CELLS).fill(false);
+    let links = Array(N_CELLS).fill(-1);
     visited[0] = true;
+
+    let history = [0];
     let queue = [0];
     while (queue.length !== 0) {
         let new_queue = [];
         for (let i = 0; i < queue.length; ++i) {
             let cell = queue[i];
             if (cell === N_CELLS - 1) {
-                return;
+                new_queue = [];
+                break;
             }
-            let paths = get_cell_paths(cell);
-            for (path of paths) {
-                let neighbour_cell = get_cell_neighbour(cell, path);
-                if (!visited[neighbour_cell] && can_visit_neighbour(cell, neighbour_cell, path, visited)) {
+            let doors = get_cell_doors(cell);
+            for (door of doors) {
+                let neighbour_cell = get_cell_neighbour(cell, door);
+                if (!visited[neighbour_cell] && can_visit_neighbour(cell, neighbour_cell, door, visited)) {
                     visited[neighbour_cell] = true;
+                    links[neighbour_cell] = cell;
                     new_queue.push(neighbour_cell);
-                    draw_line(get_cell_middle(cell), get_cell_middle(neighbour_cell), BFS_COLOR);
-                    await wait(ANIMATION_WAIT_TIME);
+                    history.push(neighbour_cell);
                 }
             }
         }
         queue = new_queue;
     }
+
+    let cell = N_CELLS - 1; 
+    let path = [];
+    while (cell !== 0) {
+        path.push(cell)
+        let neighbour_cell = links[cell];
+        cell = neighbour_cell;
+    }
+
+    path.push(0);
+    return {path: path.reverse(), history: history.reverse()};
 }
 
 function get_cell_neighbour(cell, wall) {
@@ -289,7 +373,7 @@ function get_cell_walls(cell) {
     return [NORTH, EAST, SOUTH, WEST].filter(wall => wall & hash);
 }
 
-function get_cell_paths(cell) {
+function get_cell_doors(cell) {
     let hash = WALLS[cell];
     return [NORTH, EAST, SOUTH, WEST].filter(wall => !(wall & hash));
 }
@@ -310,8 +394,9 @@ async function main() {
     await generate_maze(BRANCH_P);
     await make_loops(LOOP_P);
     draw_grid_walls();
-    solve_maze_dfs();
-    solve_maze_bfs();
+    let dfs_res = await solve_maze_dfs();
+    let bfs_res = await solve_maze_bfs();
+    await draw_results({dfs: dfs_res, bfs: bfs_res});
 }
 
 main();
