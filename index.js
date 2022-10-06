@@ -3,8 +3,8 @@ CONTEXT = null;
 
 CANVAS_WIDTH = 800;
 CANVAS_HEIGHT = 600;
-N_COLS = CANVAS_WIDTH / 10;
-N_ROWS = CANVAS_HEIGHT / 10;
+N_COLS = CANVAS_WIDTH / 25;
+N_ROWS = CANVAS_HEIGHT / 25;
 N_CELLS = N_ROWS * N_COLS;
 
 CELL_WIDTH = CANVAS_WIDTH / N_COLS;
@@ -19,7 +19,8 @@ BRANCH_CIRCLE_COLOR = "#cc241d";
 BRANCH_CIRCLE_RADIUS = 5.0;
 ANIMATION_WAIT_TIME = 1.0;
 
-BRANCH_P = 0.85;
+BRANCH_P = 0.3;
+LOOP_P = 1.0;
 WALLS = Array(N_CELLS).fill(15);
 NORTH = 1;
 EAST = 2;
@@ -121,21 +122,51 @@ function get_opposite_wall(wall) {
     } else if (wall === WEST) {
         return EAST;
     } else {
-        throw(`Unknown wallection`);
+        throw("Unknown wall");
     }
 }
 
 function remove_wall(cell, wall) {
-    let neighbour_cell = get_neighbour_cell(cell, wall);
+    let neighbour_cell = get_cell_neighbour(cell, wall);
     WALLS[cell] -= wall;
     WALLS[neighbour_cell] -= get_opposite_wall(wall);
 }
 
-function can_visit_neighbour(cell, neighbour_cell, wall, visited) {
+function can_remove_wall(cell, wall) {
+    let north_cell = get_cell_neighbour(cell, NORTH);
+    let east_cell = get_cell_neighbour(cell, EAST);
+    let south_cell = get_cell_neighbour(cell, SOUTH);
+    let west_cell = get_cell_neighbour(cell, WEST);
+
+    let walls = WALLS[cell];
+    let north_walls = WALLS[north_cell];
+    let east_walls = WALLS[east_cell];
+    let south_walls = WALLS[south_cell];
+    let west_walls = WALLS[west_cell];
+
+    if (wall === NORTH && can_visit_neighbour(cell, north_cell, wall)) {
+        return (
+            ((walls & WEST) || (north_walls & WEST) || (west_walls & NORTH))
+            && ((walls & EAST) || (north_walls & EAST) || (east_walls & NORTH)) 
+        )
+    } else if (wall === EAST && can_visit_neighbour(cell, east_cell, wall)) {
+        return (
+            ((walls & NORTH) || (east_walls & NORTH) || (north_walls & EAST))
+            && ((walls & SOUTH) || (east_walls & SOUTH) || (south_walls & EAST)) 
+        )
+    } else if (wall === SOUTH && can_visit_neighbour(cell, south_cell, wall)) {
+        return can_remove_wall(south_cell, NORTH);
+    } else if (wall === WEST && can_visit_neighbour(cell, west_cell, wall)) {
+        return can_remove_wall(west_cell, EAST);
+    } else {
+        return false;
+    }
+}
+
+function can_visit_neighbour(cell, neighbour_cell, wall) {
     return !(
         neighbour_cell < 0
         || neighbour_cell >= N_CELLS
-        || visited[neighbour_cell]
         || (wall === EAST && cell % N_COLS === N_COLS - 1)
         || (wall === WEST && cell % N_COLS === 0)
     )
@@ -148,10 +179,11 @@ async function generate_maze(branch_p) {
     async function walk(cell) {
         visited[cell] = true;
         let walls = get_cell_walls(cell);
-        let is_branch = (Math.random() < branch_p && walls.length >= 2);
         if (walls.length === 0) {
             return;
         }
+
+        let is_branch = (Math.random() < branch_p && walls.length >= 2);
 
         if (is_branch) {
             while (branch_heads.length !== 0) {
@@ -162,17 +194,27 @@ async function generate_maze(branch_p) {
 
         shuffle(walls);
         for (let wall of walls) {
-            let neighbour_cell = get_neighbour_cell(cell, wall);
-            if (can_visit_neighbour(cell, neighbour_cell, wall, visited)) {
+            let neighbour_cell = get_cell_neighbour(cell, wall);
+            let neighbour_walls = get_cell_walls(neighbour_cell);
+            if (!visited[neighbour_cell] && can_visit_neighbour(cell, neighbour_cell, wall, visited)) {
                 remove_wall(cell, wall);
-
-                draw_cell_walls(cell);
                 await walk(neighbour_cell);
             }
         }
     }
 
     await walk(0);
+}
+
+async function make_loops(loop_p) {
+    for (let cell = 0; cell < N_CELLS; ++cell) {
+        let cell_walls = get_cell_walls(cell);
+        for (wall of cell_walls) {
+            if (Math.random() < loop_p && can_remove_wall(cell, wall)) {
+                remove_wall(cell, wall);
+            }
+        }
+    }
 }
 
 async function solve_maze_dfs() {
@@ -185,8 +227,8 @@ async function solve_maze_dfs() {
         }
         let paths = get_cell_paths(cell);
         for (let path of paths) {
-            let neighbour_cell = get_neighbour_cell(cell, path);
-            if (can_visit_neighbour(cell, neighbour_cell, path, visited)) {
+            let neighbour_cell = get_cell_neighbour(cell, path);
+            if (!visited[neighbour_cell] && can_visit_neighbour(cell, neighbour_cell, path, visited)) {
                 draw_line(get_cell_middle(cell), get_cell_middle(neighbour_cell), DFS_COLOR);
                 await wait(ANIMATION_WAIT_TIME);
                 if (await walk(neighbour_cell)) {
@@ -213,8 +255,8 @@ async function solve_maze_bfs() {
             }
             let paths = get_cell_paths(cell);
             for (path of paths) {
-                let neighbour_cell = get_neighbour_cell(cell, path);
-                if (can_visit_neighbour(cell, neighbour_cell, path, visited)) {
+                let neighbour_cell = get_cell_neighbour(cell, path);
+                if (!visited[neighbour_cell] && can_visit_neighbour(cell, neighbour_cell, path, visited)) {
                     visited[neighbour_cell] = true;
                     new_queue.push(neighbour_cell);
                     draw_line(get_cell_middle(cell), get_cell_middle(neighbour_cell), BFS_COLOR);
@@ -226,7 +268,7 @@ async function solve_maze_bfs() {
     }
 }
 
-function get_neighbour_cell(cell, wall) {
+function get_cell_neighbour(cell, wall) {
     let neighbour_cell;
     if (wall === NORTH) {
         neighbour_cell = cell - N_COLS;
@@ -237,7 +279,7 @@ function get_neighbour_cell(cell, wall) {
     } else if (wall === WEST) {
         neighbour_cell = cell - 1;
     } else {
-        throw(`Unknown wallection`);
+        throw("Unknown wall");
     }
     return neighbour_cell;
 }
@@ -265,8 +307,9 @@ const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 async function main() {
     reset_canvas();
-    draw_grid_walls();
     await generate_maze(BRANCH_P);
+    await make_loops(LOOP_P);
+    draw_grid_walls();
     solve_maze_dfs();
     solve_maze_bfs();
 }
