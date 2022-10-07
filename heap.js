@@ -3,14 +3,13 @@ export function heapify(arr) {
         let left_ind = parent_ind * 2 + 1;
         let right_ind = parent_ind * 2 + 2;
 
-        let greates_ind;
-        if (left_ind < arr.length && arr[left_ind] > arr[parent_ind]) {
-            greatest_ind = left_ind;
+        if (left_ind < arr.length && arr[left_ind][0] > arr[parent_ind][0]) {
+            var greatest_ind = left_ind;
         } else {
-            greatest_ind = parent_ind;
+            var greatest_ind = parent_ind;
         }
         
-        if (right_ind < arr.length && arr[right_ind] > arr[greatest_ind]) {
+        if (right_ind < arr.length && arr[right_ind][0] > arr[greatest_ind][0]) {
             greatest_ind = right_ind;
         }
 

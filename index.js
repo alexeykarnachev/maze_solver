@@ -3,11 +3,13 @@ import {heapify, heappop, heappush} from "./heap.js";
 
 let CANVAS = null;
 let CONTEXT = null;
+let OSCILLATOR = null;
+let AUDIO_CONTEXT = null;
 
 let CANVAS_WIDTH = 800;
 let CANVAS_HEIGHT = 600;
-let N_COLS = CANVAS_WIDTH / 25;
-let N_ROWS = CANVAS_HEIGHT / 25;
+let N_COLS = CANVAS_WIDTH / 5;
+let N_ROWS = CANVAS_HEIGHT / 5;
 let N_CELLS = N_ROWS * N_COLS;
 let CELL_WIDTH = CANVAS_WIDTH / N_COLS;
 let CELL_HEIGHT = CANVAS_HEIGHT / N_ROWS;
@@ -15,14 +17,14 @@ if (CELL_WIDTH !== CELL_HEIGHT) {
     throw(`CELL_WIDTH must be equal to CELL_HEIGHT`)
 }
 
-let BACKGROUND_COLOR = "#888888";
+let BACKGROUND_COLOR = "#bfbfbf";
 let WALL_COLOR = "#282828";
-let ALGO_COLOR = {dfs: "#fb4934", bfs: "#b8bb26"}
-let ANIMATION_WAIT_TIME = 1.0;
+let ALGO_COLOR = {dfs: "#fb4934", bfs: "#b8bb26", astar: "#076678"}
+let ANIMATION_WAIT_TIME = 10.0;
 
 
 let BRANCH_P = 0.1;
-let LOOP_P = 0.02;
+let LOOP_P = 0.01;
 let WALLS = Array(N_CELLS).fill(15);
 let NORTH = 1;
 let EAST = 2;
@@ -76,8 +78,25 @@ function reset_canvas() {
     CANVAS.height = CANVAS_HEIGHT;
     CONTEXT = CANVAS.getContext("2d");
 
+    AUDIO_CONTEXT = new AudioContext();
+    OSCILLATOR = AUDIO_CONTEXT.createOscillator();
+    OSCILLATOR.type = "triangle";
+    OSCILLATOR.start();
+
     CONTEXT.fillStyle = BACKGROUND_COLOR;
     CONTEXT.fillRect(0, 0, CANVAS.width, CANVAS.height);
+
+    let start_btn = document.createElement("start_btn");
+    start_btn.innerHTML = "Start";
+    start_btn.onclick = async function() {
+        AUDIO_CONTEXT.resume();
+        let dfs_res = await solve_maze_dfs();
+        let bfs_res = await solve_maze_bfs();
+        let astar_res = await solve_maze_astar();
+        await draw_results({dfs: dfs_res, bfs: bfs_res, astar: astar_res});
+    }
+
+    document.body.appendChild(start_btn);
 }
 
 function draw_cell_walls(cell) {
@@ -150,7 +169,13 @@ async function draw_results(results) {
 
             fill_cell(cell, with_alpha(colors[i], 0.2));
             draw_cell_walls(cell);
+
+            let dist = get_manhattan_dist(cell, N_CELLS - 1);
+            let max_dist = get_manhattan_dist(0, N_CELLS - 1);
+            OSCILLATOR.frequency.value = 1000 * (1 - dist / max_dist);
+            OSCILLATOR.connect(AUDIO_CONTEXT.destination);
             await wait(ANIMATION_WAIT_TIME);
+            OSCILLATOR.disconnect(AUDIO_CONTEXT.destination);
         }
     }
 
@@ -167,7 +192,13 @@ async function draw_results(results) {
             draw_path_step()
             fill_cell(cell, with_alpha(colors[i], 0.8));
             draw_cell_walls(cell);
+
+            let dist = get_manhattan_dist(cell, N_CELLS - 1);
+            let max_dist = get_manhattan_dist(0, N_CELLS - 1);
+            OSCILLATOR.frequency.value = 1000 * (dist / max_dist);
+            OSCILLATOR.connect(AUDIO_CONTEXT.destination);
             await wait(ANIMATION_WAIT_TIME);
+            OSCILLATOR.disconnect(AUDIO_CONTEXT.destination);
         }
     }
 }
@@ -262,7 +293,7 @@ async function generate_maze(branch_p) {
         for (let wall of walls) {
             let neighbour_cell = get_cell_neighbour(cell, wall);
             let neighbour_walls = get_cell_walls(neighbour_cell);
-            if (!visited[neighbour_cell] && can_visit_neighbour(cell, neighbour_cell, wall, visited)) {
+            if (!visited[neighbour_cell] && can_visit_neighbour(cell, neighbour_cell, wall)) {
                 remove_wall(cell, wall);
                 await walk(neighbour_cell);
             }
@@ -296,7 +327,7 @@ async function solve_maze_dfs() {
         let doors = get_cell_doors(cell);
         for (let door of doors) {
             let neighbour_cell = get_cell_neighbour(cell, door);
-            if (!visited[neighbour_cell] && can_visit_neighbour(cell, neighbour_cell, door, visited)) {
+            if (!visited[neighbour_cell] && can_visit_neighbour(cell, neighbour_cell, door)) {
                 history.push(neighbour_cell);
                 if (await walk(neighbour_cell)) {
                     path.push(neighbour_cell);
@@ -313,12 +344,10 @@ async function solve_maze_dfs() {
 }
 
 async function solve_maze_bfs() {
-    let visited = Array(N_CELLS).fill(false);
     let links = Array(N_CELLS).fill(-1);
-    visited[0] = true;
-
     let history = [0];
     let queue = [0];
+
     while (queue.length !== 0) {
         let new_queue = [];
         for (let i = 0; i < queue.length; ++i) {
@@ -330,8 +359,10 @@ async function solve_maze_bfs() {
             let doors = get_cell_doors(cell);
             for (let door of doors) {
                 let neighbour_cell = get_cell_neighbour(cell, door);
-                if (!visited[neighbour_cell] && can_visit_neighbour(cell, neighbour_cell, door, visited)) {
-                    visited[neighbour_cell] = true;
+                if (
+                    links[neighbour_cell] === -1
+                    && can_visit_neighbour(cell, neighbour_cell, door)
+                ) {
                     links[neighbour_cell] = cell;
                     new_queue.push(neighbour_cell);
                     history.push(neighbour_cell);
@@ -354,7 +385,47 @@ async function solve_maze_bfs() {
 }
 
 async function solve_maze_astar() {
-    let open = Array(N_CELLS).fill(false);
+    let links = Array(N_CELLS).fill(-1);
+    let queue = [[-get_manhattan_dist(0, N_CELLS - 1), 0]];
+    let history = [0];
+    links[0] = 0;
+
+    while (true) {
+        let [_score, cell] = heappop(queue);
+
+        // DEBUG
+        if (queue.length > 0 && _score < Math.max(queue.map(x => x[0]))) {
+            throw("BUG!");
+        }
+
+        if (cell === N_CELLS - 1) {
+            break;
+        }
+        let doors = get_cell_doors(cell);
+        for (let door of doors) {
+            let neighbour_cell = get_cell_neighbour(cell, door);
+            if (
+                links[neighbour_cell] === -1
+                && can_visit_neighbour(cell, neighbour_cell, door)
+            ) {
+                links[neighbour_cell] = cell;
+                let score = get_manhattan_dist(neighbour_cell, N_CELLS - 1);
+                heappush(queue, [-score, neighbour_cell]);
+                history.push(neighbour_cell);
+            }
+        }
+    }
+
+    let cell = N_CELLS - 1; 
+    let path = [];
+    while (cell !== 0) {
+        path.push(cell)
+        let neighbour_cell = links[cell];
+        cell = neighbour_cell;
+    }
+
+    path.push(0);
+    return {path: path.reverse(), history: history.reverse()};
 }
 
 function get_cell_neighbour(cell, wall) {
@@ -383,6 +454,14 @@ function get_cell_doors(cell) {
     return [NORTH, EAST, SOUTH, WEST].filter(wall => !(wall & hash));
 }
 
+function get_manhattan_dist(cell1, cell2) {
+    let x1 = cell1 % N_COLS;
+    let y1 = Math.floor(cell1 / N_COLS);
+    let x2 = cell2 % N_COLS;
+    let y2 = Math.floor(cell2 / N_COLS);
+    return Math.abs(x1 - x2) + Math.abs(y1 - y2);
+}
+
 const shuffle = array => {
     for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -399,9 +478,6 @@ async function main() {
     await generate_maze(BRANCH_P);
     await make_loops(LOOP_P);
     draw_grid_walls();
-    let dfs_res = await solve_maze_dfs();
-    let bfs_res = await solve_maze_bfs();
-    await draw_results({dfs: dfs_res, bfs: bfs_res});
 }
 
 main();
