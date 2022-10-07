@@ -1,32 +1,33 @@
-ANVAS = null;
-CONTEXT = null;
+import {heapify, heappop, heappush} from "./heap.js";
 
-CANVAS_WIDTH = 1800;
-CANVAS_HEIGHT = 1600;
-N_COLS = CANVAS_WIDTH / 10;
-N_ROWS = CANVAS_HEIGHT / 10;
-N_CELLS = N_ROWS * N_COLS;
 
-CELL_WIDTH = CANVAS_WIDTH / N_COLS;
-CELL_HEIGHT = CANVAS_HEIGHT / N_ROWS;
+let CANVAS = null;
+let CONTEXT = null;
+
+let CANVAS_WIDTH = 800;
+let CANVAS_HEIGHT = 600;
+let N_COLS = CANVAS_WIDTH / 25;
+let N_ROWS = CANVAS_HEIGHT / 25;
+let N_CELLS = N_ROWS * N_COLS;
+let CELL_WIDTH = CANVAS_WIDTH / N_COLS;
+let CELL_HEIGHT = CANVAS_HEIGHT / N_ROWS;
 if (CELL_WIDTH !== CELL_HEIGHT) {
     throw(`CELL_WIDTH must be equal to CELL_HEIGHT`)
 }
 
-BACKGROUND_COLOR = "#888888";
-WALL_COLOR = "#282828";
-ALGO_COLOR = {dfs: "#fb4934", bfs: "#b8bb26"}
-PATH_ALPHA = 0.2;
-ANIMATION_WAIT_TIME = 1.0;
+let BACKGROUND_COLOR = "#888888";
+let WALL_COLOR = "#282828";
+let ALGO_COLOR = {dfs: "#fb4934", bfs: "#b8bb26"}
+let ANIMATION_WAIT_TIME = 1.0;
 
 
-BRANCH_P = 0.1;
-LOOP_P = 0.02;
-WALLS = Array(N_CELLS).fill(15);
-NORTH = 1;
-EAST = 2;
-SOUTH = 4;
-WEST = 8;
+let BRANCH_P = 0.1;
+let LOOP_P = 0.02;
+let WALLS = Array(N_CELLS).fill(15);
+let NORTH = 1;
+let EAST = 2;
+let SOUTH = 4;
+let WEST = 8;
 
 function with_alpha(color, opacity) {
     const _opacity = Math.round(Math.min(Math.max(opacity || 1, 0), 1) * 255);
@@ -172,7 +173,7 @@ async function draw_results(results) {
 }
 
 function fill_cell(cell, color) {
-    [x0, y0, x1, y1] = get_cell_coords(cell);
+    let [x0, y0, x1, y1] = get_cell_coords(cell);
     CONTEXT.fillStyle = color;
     CONTEXT.fillRect(x0, y0, CELL_WIDTH, CELL_HEIGHT);
 }
@@ -274,7 +275,7 @@ async function generate_maze(branch_p) {
 async function make_loops(loop_p) {
     for (let cell = 0; cell < N_CELLS; ++cell) {
         let cell_walls = get_cell_walls(cell);
-        for (wall of cell_walls) {
+        for (let wall of cell_walls) {
             if (Math.random() < loop_p && can_remove_wall(cell, wall)) {
                 remove_wall(cell, wall);
             }
@@ -327,7 +328,7 @@ async function solve_maze_bfs() {
                 break;
             }
             let doors = get_cell_doors(cell);
-            for (door of doors) {
+            for (let door of doors) {
                 let neighbour_cell = get_cell_neighbour(cell, door);
                 if (!visited[neighbour_cell] && can_visit_neighbour(cell, neighbour_cell, door, visited)) {
                     visited[neighbour_cell] = true;
@@ -350,6 +351,10 @@ async function solve_maze_bfs() {
 
     path.push(0);
     return {path: path.reverse(), history: history.reverse()};
+}
+
+async function solve_maze_astar() {
+    let open = Array(N_CELLS).fill(false);
 }
 
 function get_cell_neighbour(cell, wall) {
