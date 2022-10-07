@@ -4,10 +4,10 @@ import {MazeAnimator} from "./maze_animator.js";
 import {solve_maze_dfs, solve_maze_bfs, solve_maze_astar} from "./maze_solver.js";
 import {uv_to_hex} from "./utils.js";
 
-let N_COLS = 100;
-let N_ROWS = 100;
-let BRANCH_P = 0.1;
-let LOOP_P = 0.02;
+let N_COLS = 80;
+let N_ROWS = 60;
+let BRANCH_P = 0.15;
+let LOOP_P = 0.05;
 
 let BACKGROUND_COLOR = "#928374";
 let WALL_COLOR = "#282828";
@@ -15,7 +15,7 @@ let DFS_COLOR = "#fb4934";
 let BFS_COLOR = "#b8bb26";
 let ASTAR_COLOR = "#076678";
 
-let ANIMATION_STEP_MS = 1.0;
+let ANIMATION_STEP_MS = 0.0;
 
 
 async function main() {
@@ -25,9 +25,12 @@ async function main() {
     let maze_drawer = new MazeDrawer(maze, context, BACKGROUND_COLOR, WALL_COLOR);
     let maze_animator = new MazeAnimator(maze_drawer, ANIMATION_STEP_MS);
 
-    let dfs = solve_maze_dfs(maze);
-    let bfs = solve_maze_bfs(maze);
-    let astar = solve_maze_astar(maze);
+    await maze.generate();
+    maze_drawer.draw_maze();
+
+    let dfs = await solve_maze_dfs(maze);
+    let bfs = await solve_maze_bfs(maze);
+    let astar = await solve_maze_astar(maze);
 
     let alpha = uv_to_hex(0.5);
     await maze_animator.animate_solver_result(bfs, BFS_COLOR + alpha, BFS_COLOR);

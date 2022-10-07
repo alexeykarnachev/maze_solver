@@ -10,12 +10,10 @@ export class MazeDrawer {
 
         this.cell_width = this.context.canvas.width / maze.n_cols;
         this.cell_height = this.context.canvas.height / maze.n_rows;
-        this.wall_width = Math.min(this.cell_width, this.cell_height) * 0.2;
-
-        this.reset();
+        this.wall_width = Math.min(this.cell_width, this.cell_height) * 0.12;
     }
 
-    reset() {
+    draw_maze() {
         this.context.fillStyle = this.background_color;
         this.context.fillRect(0, 0, this.context.canvas.width, this.context.canvas.height);
         for (let cell = 0; cell < this.maze.n_cells; ++cell) {
@@ -27,13 +25,15 @@ export class MazeDrawer {
         let walls = this.maze.walls[cell]
         this.context.lineWidth = this.wall_width;
         for (let wall of WALLS) {
-            this.context.strokeStyle = wall & walls ? this.wall_color : this.background_color;
-            let coords = this.get_wall_coords(cell, wall);
+            if (wall & walls) {
+                this.context.strokeStyle = this.wall_color;
+                let coords = this.get_wall_coords(cell, wall);
 
-            this.context.beginPath();
-            this.context.moveTo(coords[0], coords[1]);
-            this.context.lineTo(coords[2], coords[3]);
-            this.context.stroke();
+                this.context.beginPath();
+                this.context.moveTo(coords[0], coords[1]);
+                this.context.lineTo(coords[2], coords[3]);
+                this.context.stroke();
+            }
         }
     }
 

@@ -13,18 +13,17 @@ export class Maze {
         this.loop_p = loop_p;
         this.n_cells = this.n_rows * this.n_cols;
         this.walls = Array(this.n_cells);
-        this.generate();
     }
 
     reset() {
         this.walls = this.walls.fill(15);
     }
 
-    generate() {
+    async generate() {
         let visited = Array(this.n_cells).fill(false);
         let heads = [];
         let maze = this;
-        function walk(cell) {
+        async function walk(cell) {
             visited[cell] = true;
             let walls = maze.get_cell_walls(cell);
             if (walls.length === 0) {
@@ -36,7 +35,7 @@ export class Maze {
                 && walls.length >= 2
             ) {
                 while (heads.length !== 0) {
-                    walk(heads.pop());
+                    await walk(heads.pop());
                 }
                 heads.push(cell);
             }
@@ -50,7 +49,7 @@ export class Maze {
                     && maze.can_visit_neighbour(cell, neighbour_cell)
                 ) {
                     maze.remove_wall(cell, wall);
-                    walk(neighbour_cell);
+                    await walk(neighbour_cell);
                 }
             }
         }
@@ -70,7 +69,7 @@ export class Maze {
         }
 
         this.reset()
-        walk(0);
+        await walk(0);
         make_loops();
     }
 

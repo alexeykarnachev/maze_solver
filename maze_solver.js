@@ -2,12 +2,12 @@ import {links_to_path} from "./utils.js";
 import {heappop, heappush} from "./heapq.js"
 
 
-export function solve_maze_dfs(maze) {
+export async function solve_maze_dfs(maze) {
     let visited = Array(maze.n_cells).fill(false);
     let path = [];
     let history = [0];
 
-    function walk(cell) {
+    async function walk(cell) {
         visited[cell] = true;
         if (cell == maze.n_cells - 1) {
             return true;
@@ -21,7 +21,7 @@ export function solve_maze_dfs(maze) {
                 && maze.can_visit_neighbour(cell, neighbour_cell)
             ) {
                 history.push(neighbour_cell);
-                if (walk(neighbour_cell)) {
+                if (await walk(neighbour_cell)) {
                     path.push(neighbour_cell);
                     return true
                 }
@@ -30,12 +30,12 @@ export function solve_maze_dfs(maze) {
         return false;
     }
 
-    walk(0);
+    await walk(0);
     path.push(0);
     return {path: path, history: history};
 }
 
-export function solve_maze_bfs(maze) {
+export async function solve_maze_bfs(maze) {
     let links = Array(maze.n_cells).fill(-1);
     let history = [0];
     let queue = [0];
@@ -71,7 +71,7 @@ export function solve_maze_bfs(maze) {
     return {path: path, history: history};
 }
 
-export function solve_maze_astar(maze) {
+export async function solve_maze_astar(maze) {
     let links = Array(maze.n_cells).fill(-1);
     let history = [0];
     let queue = [[-maze.get_manhattan_dist_to_exit(0), 0]];
