@@ -2,8 +2,9 @@ import {sleep} from "./utils.js";
 
 
 export class MazeAnimator {
-    constructor(maze_drawer, maze_audio_player, step_ms) {
+    constructor(maze_drawer, maze_stats_drawer, maze_audio_player, step_ms) {
         this.drawer = maze_drawer;
+        this.stats_drawer = maze_stats_drawer;
         this.audio_player = maze_audio_player;
         this.step_ms = step_ms;
     }

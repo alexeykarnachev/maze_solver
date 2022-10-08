@@ -3,7 +3,17 @@
 <html>
     <title>Path Finding</title>
     <body>
-        <canvas id="canvas" width=800 height=600></canvas>
+
+        <div id="main_div">
+            <div id="maze_div" style="display: inline-block">
+                <canvas id="maze_canvas" width=800 height=600></canvas>
+            </div>
+
+            <div id="stats_div" style="display: inline-block">
+                <canvas id="stats_canvas" width=400 height=600></canvas>
+            </div>
+        </div>
+
         <script type="module" src="./index.js"></script>
     </body>
 </html>

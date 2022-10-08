@@ -11,11 +11,17 @@ export class MazeDrawer {
         this.cell_width = this.context.canvas.width / maze.n_cols;
         this.cell_height = this.context.canvas.height / maze.n_rows;
         this.wall_width = Math.min(this.cell_width, this.cell_height) * 0.12;
+
+        this.reset();
+    }
+
+    reset() {
+        this.context.fillStyle = this.background_color;
+        this.context.fillRect(0, 0, this.context.canvas.width, this.context.canvas.height);
     }
 
     draw_maze() {
-        this.context.fillStyle = this.background_color;
-        this.context.fillRect(0, 0, this.context.canvas.width, this.context.canvas.height);
+        this.reset();
         for (let cell = 0; cell < this.maze.n_cells; ++cell) {
             this.draw_cell_walls(cell);
         }
