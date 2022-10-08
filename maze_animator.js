@@ -1,4 +1,4 @@
-import {sleep} from "./utils.js";
+import {sleep, alpha} from "./utils.js";
 
 
 export class MazeAnimator {
@@ -9,14 +9,19 @@ export class MazeAnimator {
         this.step_ms = step_ms;
     }
 
-    async animate_solver_result(result, history_color, path_color) {
-        await this.animate_history(result.history, history_color);
-        await this.animate_path(result.path, path_color);
+    async animate_solver_result(name, result, color) {
+        await this.animate_history(name, result.history, color);
+        await this.animate_path(name, result.path, color);
     }
 
-    async animate_history(cells, color) {
-        for (let cell of cells) {
-            this.drawer.fill_cell(cell, color);
+    async animate_history(name, cells, color) {
+        for (let i = 0; i < cells.length; ++i) {
+            let cell = cells[i];
+            let value = i / this.drawer.maze.n_cells;
+            this.stats_drawer.update_steps(name, value, alpha(color, 0.5));
+
+            this.stats_drawer.draw();
+            this.drawer.fill_cell(cell, alpha(color, 0.5));
             this.audio_player.play_progress(cell, false);
 
             await sleep(this.step_ms);
@@ -24,8 +29,13 @@ export class MazeAnimator {
         }
     }
 
-    async animate_path(cells, color) {
-        for (let cell of cells) {
+    async animate_path(name, cells, color) {
+        for (let i = 0; i < cells.length; ++i) {
+            let cell = cells[i];
+            let value = i / this.drawer.maze.n_cells;
+            this.stats_drawer.update_steps(name, value, alpha(color));
+
+            this.stats_drawer.draw();
             this.drawer.fill_cell(cell, color);
             this.audio_player.play_progress(cell, true);
 
