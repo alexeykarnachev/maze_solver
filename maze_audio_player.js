@@ -1,17 +1,18 @@
 export class MazeAudioPlayer {
-    constructor(maze, context, type) {
+    constructor(maze, audio_context, oscillator_type, dist_type) {
         this.maze = maze;
-        this.context = context;
+        this.context = audio_context;
+        this.dist_type = dist_type;
 
         this.oscillator = this.context.createOscillator();
-        this.oscillator.type = type;
+        this.oscillator.type = oscillator_type;
         this.oscillator.start();
-        this.max_freq = 1000;
+        this.max_freq = 700;
     }
 
-    play_manhattan_dist(cell, inverse_dist) {
-        let progress = this.maze.get_manhattan_dist_to_exit(cell) / this.maze.get_manhattan_diameter();
-        if (!inverse_dist) {
+    play_progress(cell, inverse_dist) {
+        let progress = this.maze.get_progress_to_exit(cell, this.dist_type);
+        if (inverse_dist) {
             progress = 1 - progress;
         }
         let freq = this.max_freq * progress;

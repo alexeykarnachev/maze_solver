@@ -32,6 +32,7 @@ export async function solve_maze_dfs(maze) {
 
     await walk(0);
     path.push(0);
+    console.log(path.length);
     return {path: path, history: history};
 }
 

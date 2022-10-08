@@ -16,7 +16,7 @@ export class MazeAnimator {
     async animate_history(cells, color) {
         for (let cell of cells) {
             this.drawer.fill_cell(cell, color);
-            this.audio_player.play_manhattan_dist(cell, false);
+            this.audio_player.play_progress(cell, false);
 
             await sleep(this.step_ms);
             this.audio_player.stop();
@@ -26,7 +26,7 @@ export class MazeAnimator {
     async animate_path(cells, color) {
         for (let cell of cells) {
             this.drawer.fill_cell(cell, color);
-            this.audio_player.play_manhattan_dist(cell, true);
+            this.audio_player.play_progress(cell, true);
 
             await sleep(this.step_ms);
             this.audio_player.stop();

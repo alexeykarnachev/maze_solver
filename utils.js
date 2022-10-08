@@ -3,6 +3,10 @@ export function uv_to_hex(x) {
     return h.toString(16).toUpperCase();
 }
 
+export function alpha(color, a) {
+    return color + uv_to_hex(a);
+}
+
 export function get_manhattan_dist(pos1, pos2) {
     return Math.abs(pos1[0] - pos2[0]) + Math.abs(pos1[1] - pos2[1]);
 }

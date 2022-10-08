@@ -13,10 +13,12 @@ export class Maze {
         this.loop_p = loop_p;
         this.n_cells = this.n_rows * this.n_cols;
         this.walls = Array(this.n_cells);
+        this.dists = Array(this.n_cells);
     }
 
     reset() {
         this.walls = this.walls.fill(15);
+        this.dists = this.dists.fill(Infinity);
     }
 
     async generate() {
@@ -68,9 +70,39 @@ export class Maze {
             }
         }
 
+        function calc_dists() {
+            let visited = Array(maze.n_cells).fill(false);
+            let queue = [maze.n_cells - 1];
+            let dist = 0;
+
+            while (queue.length !== 0) {
+                let new_queue = [];
+                
+                for (let i = 0; i < queue.length; ++i) {
+                    let cell = queue[i];
+                    maze.dists[cell] = dist;
+
+                    let doors = maze.get_cell_doors(cell);
+                    for (let door of doors) {
+                        let neighbour_cell = maze.get_cell_neighbour(cell, door);
+                        if (
+                            !visited[neighbour_cell]
+                            && maze.can_visit_neighbour(cell, neighbour_cell)
+                        ) {
+                            visited[neighbour_cell] = true;
+                            new_queue.push(neighbour_cell);
+                        }
+                    }
+                }
+                queue = new_queue;
+                dist += 1;
+            }
+        }
+
         this.reset()
         await walk(0);
         make_loops();
+        calc_dists();
     }
 
     get_cell_row_col(cell) {
@@ -95,6 +127,33 @@ export class Maze {
         return cell + sign * shift;
     }
 
+    get_progress_to_exit(cell, type) {
+        let dist_to_exit = this.get_dist_to_exit(cell, type);
+        let diameter = this.get_diameter(type);
+        let progress = 1 - dist_to_exit / diameter; 
+        return progress;
+    }
+
+    get_dist_to_exit(cell, type) {
+        if (type === "manhattan") {
+            return this.get_manhattan_dist_to_exit(cell);
+        } else if (type === "true") {
+            return this.get_true_dist_to_exit(cell);
+        } else {
+            throw(`Unknown distance type: ${type}`);
+        }
+    }
+
+    get_diameter(type) {
+        if (type === "manhattan") {
+            return this.get_manhattan_diameter();
+        } else if (type === "true") {
+            return this.get_true_diameter();
+        } else {
+            throw(`Unknown distance type: ${type}`);
+        }
+    }
+
     get_manhattan_dist_to_exit(cell) {
         let cell_pos = this.get_cell_row_col(cell);
         let exit_pos = this.get_cell_row_col(this.n_cells - 1);
@@ -103,6 +162,14 @@ export class Maze {
 
     get_manhattan_diameter() {
         return this.get_manhattan_dist_to_exit(0);
+    }
+
+    get_true_dist_to_exit(cell) {
+        return this.dists[cell];
+    }
+
+    get_true_diameter() {
+        return this.dists[0];
     }
 
     remove_wall(cell, wall) {
