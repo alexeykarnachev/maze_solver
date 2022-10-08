@@ -32,11 +32,17 @@ export async function solve_maze_dfs(maze) {
 
     await walk(0);
     path.push(0);
-    console.log(path.length);
     return {path: path, history: history};
 }
 
-export async function solve_maze_bfs(maze) {
+export async function solve_maze_bfs(maze, allowed_cells=null) {
+    let allowed = Array(maze.n_cells).fill(false);
+    if (allowed_cells != null) {
+        allowed_cells.map(idx => {allowed[idx] = true});
+    } else {
+        allowed.fill(true);
+    }
+
     let links = Array(maze.n_cells).fill(-1);
     let history = [0];
     let queue = [0];
@@ -57,6 +63,7 @@ export async function solve_maze_bfs(maze) {
                 let neighbour_cell = maze.get_cell_neighbour(cell, door);
                 if (
                     links[neighbour_cell] === -1
+                    && allowed[neighbour_cell]
                     && maze.can_visit_neighbour(cell, neighbour_cell)
                 ) {
                     links[neighbour_cell] = cell;
@@ -70,6 +77,12 @@ export async function solve_maze_bfs(maze) {
     
     let path = links_to_path(links);
     return {path: path, history: history};
+}
+
+export async function solve_maze_dbs(maze) {
+    let dfs = await solve_maze_dfs(maze);
+    let bfs = await solve_maze_bfs(maze, dfs.history);
+    return {path: bfs.path, history: dfs.history.concat(bfs.history)};
 }
 
 export async function solve_maze_astar(maze) {
