@@ -101,6 +101,10 @@ export class Maze {
         return get_manhattan_dist(cell_pos, exit_pos); 
     }
 
+    get_manhattan_diameter() {
+        return this.get_manhattan_dist_to_exit(0);
+    }
+
     remove_wall(cell, wall) {
         let neighbour_cell = this.get_cell_neighbour(cell, wall);
         this.walls[cell] -= wall;
