@@ -37,11 +37,9 @@ async function main() {
     let n_algorithms = 4;
     let maze_canvas = document.getElementById("maze_canvas");
     let maze_context = maze_canvas.getContext("2d");
-    let stats_container = document.getElementById("stats_container");
     let maze = new Maze(N_COLS, N_ROWS, BRANCH_P, LOOP_P);
     let maze_drawer = new MazeDrawer(maze, maze_context, MAZE_BACKGROUND_COLOR, WALL_COLOR);
     let maze_stats_drawer = new MazeStatsDrawer(
-        stats_container,
         n_algorithms,
         STATS_BACKGROUND_COLOR,
         STATS_BORDER_COLOR,
