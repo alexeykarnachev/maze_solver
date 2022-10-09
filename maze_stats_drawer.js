@@ -159,11 +159,6 @@ class Pane {
         this.context.font = font;
         this.context.textBaseline = baseline;
 
-        this.context.beginPath();
-        this.context.moveTo(x, y);
-        this.context.lineTo(x + 100, y);
-        this.context.stroke();
-
         let metrics = this.context.measureText(text);
         this.context.fillStyle = this.background_color;
         if (baseline === "bottom") {
@@ -181,7 +176,6 @@ class Pane {
     }
 
     draw_hbar(value, color, grid_size, loc, thickness) {
-        value *= 4;
         let height = (this.height - this.top_offset - this.bot_offset) / grid_size;
         let y = this.top_offset + loc * height + 0.5 * (1 - thickness) * height;
 
