@@ -35,21 +35,38 @@ export class MazeStatsDrawer {
         }
 
         let draw_hbar_name = (text, color, loc) => {
-            let x = 0;
-            let y = (loc + 1) / this.n_algorithms;
-            let font = "20px " + this.font_name;
-            this.bar_pane.draw_text(text, color, x, y, font);
+            let x = bar_left_offset * 0.1;
+            let y = (loc + 1) / this.n_algorithms - 0.02;
+            let font = "50px " + this.font_name;
+            this.bar_pane.draw_text(text, color, x, y, font, "bottom");
+        }
+
+        let draw_hbar_steps = (value, color, loc) => {
+            let x = 1 - (bar_right_offset * 0.9);
+            let y = (loc + 1) / this.n_algorithms - 0.02;
+            let font = "40px " + this.font_name;
+            this.bar_pane.draw_text(value.toFixed(2), color, x, y, font, "bottom");
+        }
+
+        let draw_hbar_path = (value, color, loc) => {
+            let x = 1 - (bar_right_offset * 0.9);
+            let y = loc / this.n_algorithms + 0.03;
+            let font = "40px " + this.font_name;
+            this.bar_pane.draw_text(value.toFixed(2), color, x, y, font, "hanging");
         }
 
         for (let name in this.name_to_loc) {
             let loc = this.name_to_loc[name];
             let [_, value, color] = this.steps_bars[loc];
-            draw_hbar(value, pSBC(-0.8, color), loc);
+            let steps_bar_color = pSBC(-0.4, color); 
+            draw_hbar(value, steps_bar_color, loc);
             draw_hbar_name(name, color, loc);
+            draw_hbar_steps(value, steps_bar_color, loc);
 
             let path_bar = this.path_bars[loc];
             if (path_bar != null) {
                 draw_hbar(path_bar[1], path_bar[2], loc);
+                draw_hbar_path(path_bar[1], path_bar[2], loc);
             }
         }
     }
@@ -94,15 +111,23 @@ class Pane {
         this.context.fillRect(0, 0, this.width, this.height);
     }
 
-    draw_text(text, color, x, y, font) {
+    draw_text(text, color, x, y, font, baseline) {
         x *= this.width;
         y *= this.height;
         this.context.font = font;
-        this.context.textBaseline = "bottom";
+        this.context.textBaseline = baseline;
 
         let metrics = this.context.measureText(text);
         this.context.fillStyle = this.background_color;
-        this.context.fillRect(x, y, metrics.width, metrics.height);
+        if (baseline === "bottom") {
+            let h = metrics.fontBoundingBoxAscent;
+            this.context.fillRect(x, y - h, metrics.width, h);
+        } else if (baseline === "hanging") {
+            let h = metrics.fontBoundingBoxDescent;
+            this.context.fillRect(x, y, metrics.width, h);
+        } else {
+            throw(`Unknown text base line: ${baseline}`);
+        }
 
         this.context.fillStyle = color;
         this.context.fillText(text, x, y);
