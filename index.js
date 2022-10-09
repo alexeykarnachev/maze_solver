@@ -10,6 +10,12 @@ import {
     solve_maze_astar
 } from "./maze_solver.js";
 
+new FontFace(
+    'SourceCodePro',
+    'url(assets/fonts/Source_Code_Pro/static/SourceCodePro-Regular.ttf)'
+).load().then((font) => { document.fonts.add(font) });
+let FONT_NAME = "SourceCodePro"
+
 let N_COLS = 32;
 let N_ROWS = 24;
 let BRANCH_P = 0.01;
@@ -28,12 +34,19 @@ let ANIMATION_STEP_MS = 10.0;
 
 
 async function main() {
+    let n_algorithms = 4;
     let maze_canvas = document.getElementById("maze_canvas");
     let maze_context = maze_canvas.getContext("2d");
     let stats_container = document.getElementById("stats_container");
     let maze = new Maze(N_COLS, N_ROWS, BRANCH_P, LOOP_P);
     let maze_drawer = new MazeDrawer(maze, maze_context, MAZE_BACKGROUND_COLOR, WALL_COLOR);
-    let maze_stats_drawer = new MazeStatsDrawer(stats_container, STATS_BACKGROUND_COLOR, STATS_BORDER_COLOR);
+    let maze_stats_drawer = new MazeStatsDrawer(
+        stats_container,
+        n_algorithms,
+        STATS_BACKGROUND_COLOR,
+        STATS_BORDER_COLOR,
+        FONT_NAME
+    );
 
     await maze.generate();
     maze_drawer.draw_maze();

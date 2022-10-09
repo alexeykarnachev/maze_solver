@@ -33,7 +33,7 @@ export class MazeAnimator {
         for (let i = 0; i < cells.length; ++i) {
             let cell = cells[i];
             let value = i / this.drawer.maze.n_cells;
-            this.stats_drawer.update_steps(name, value, alpha(color));
+            this.stats_drawer.update_path(name, value, alpha(color));
 
             this.stats_drawer.draw();
             this.drawer.fill_cell(cell, color);
