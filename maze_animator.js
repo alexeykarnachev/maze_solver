@@ -18,9 +18,9 @@ export class MazeAnimator {
         for (let i = 0; i < cells.length; ++i) {
             let cell = cells[i];
             let step = i / this.drawer.maze.n_cells;
-            let dist_to_exit = this.drawer.maze.get_progress_to_exit(cell, "true");
+            let progress = this.drawer.maze.get_progress_to_exit(cell, "true");
             this.stats_drawer.update_steps(name, step, alpha(color, 0.5));
-            this.stats_drawer.update_dist_to_exit(name, step, dist_to_exit, color);
+            this.stats_drawer.update_steps_progress(name, step, progress, color);
 
             this.stats_drawer.draw();
             this.drawer.fill_cell(cell, alpha(color, 0.5));
@@ -34,8 +34,11 @@ export class MazeAnimator {
     async animate_path(name, cells, color) {
         for (let i = 0; i < cells.length; ++i) {
             let cell = cells[i];
-            let value = i / this.drawer.maze.n_cells;
-            this.stats_drawer.update_path(name, value, alpha(color));
+            let opposite_cell = cells[cells.length - 1 - i];
+            let step = i / this.drawer.maze.n_cells;
+            let progress = this.drawer.maze.get_progress_to_exit(opposite_cell, "true");
+            this.stats_drawer.update_path(name, step, alpha(color));
+            this.stats_drawer.update_path_progress(name, step, progress, color);
 
             this.stats_drawer.draw();
             this.drawer.fill_cell(cell, color);

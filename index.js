@@ -16,14 +16,14 @@ new FontFace(
 ).load().then((font) => { document.fonts.add(font) });
 let FONT_NAME = "SourceCodePro"
 
-let N_COLS = 32;
-let N_ROWS = 24;
+let N_COLS = 64 * 2;
+let N_ROWS = 48 * 2;
 let BRANCH_P = 0.01;
 let LOOP_P = 0.01;
 
 let MAZE_BACKGROUND_COLOR = "#928374";
 let STATS_BACKGROUND_COLOR = "#1d2021";
-let STATS_BORDER_COLOR = "#928374"
+let STATS_TEXT_COLOR = "#928374";
 let WALL_COLOR = "#282828";
 let DFS_COLOR = "#fb4934";
 let BFS_COLOR = "#b8bb26";
@@ -42,7 +42,7 @@ async function main() {
     let maze_stats_drawer = new MazeStatsDrawer(
         n_algorithms,
         STATS_BACKGROUND_COLOR,
-        STATS_BORDER_COLOR,
+        STATS_TEXT_COLOR,
         FONT_NAME
     );
 

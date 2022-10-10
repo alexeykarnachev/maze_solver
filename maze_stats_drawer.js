@@ -2,27 +2,28 @@ import {pSBC} from "./pSBC.js";
 
 
 export class MazeStatsDrawer {
-    constructor(n_algorithms, background_color, border_color, font_name) {
+    constructor(n_algorithms, background_color, text_color, font_name) {
         this.n_algorithms = n_algorithms;
         this.background_color = background_color;
-        this.border_color = border_color;
+        this.text_color = text_color;
         this.font_name = font_name;
 
         this.bar_pane = new Pane(
             document.getElementById("bar_canvas"),
             this.background_color,
-            this.font_name
+            0.15, 0.15, 0.05, 0.15
         );
 
         this.plot_pane = new Pane(
             document.getElementById("plot_canvas"),
             this.background_color,
-            this.font_name
+            0.15, 0.15, 0.05, 0.15
         );
 
         this.steps_bars = []; // (name, value, color)
         this.path_bars = []; // (name, value, color)
-        this.dist_to_exit = {}; // (color, [prev_x, prev_y], [curr_x, curr_y])
+        this.steps_progress = {}; // (color, [prev_x, prev_y], [curr_x, curr_y])
+        this.path_progress = {}; // (color, [prev_x, prev_y], [curr_x, curr_y])
         this.name_to_loc = {};
     }
 
@@ -34,31 +35,35 @@ export class MazeStatsDrawer {
     draw() {
         let bar_thickness = 0.8;
 
+        let font = (size) => {
+            return size.toString() + "px " + this.font_name;
+        }
+
         let draw_hbar = (value, color, loc) => {
             this.bar_pane.draw_hbar(value, color, this.n_algorithms, loc, bar_thickness);
         }
 
         let draw_hbar_name = (text, color, loc) => {
             let y = (loc + 1) / this.n_algorithms;
-            let font = "45px " + this.font_name;
-            this.bar_pane.draw_left_text(text, color, y, font, "bottom");
+            this.bar_pane.draw_left_text(text, color, y, font(45), "bottom");
         }
 
         let draw_hbar_steps = (value, color, loc) => {
             let y = (loc + 1) / this.n_algorithms;
-            let font = "35px " + this.font_name;
-            this.bar_pane.draw_right_text(value.toFixed(2), color, y, font, "bottom");
+            this.bar_pane.draw_right_text(value.toFixed(2), color, y, font(35), "bottom");
         }
 
         let draw_hbar_path = (value, color, loc) => {
             let y = loc / this.n_algorithms;
-            let font = "35px " + this.font_name;
-            this.bar_pane.draw_right_text(value.toFixed(2), color, y, font, "top");
+            this.bar_pane.draw_right_text(value.toFixed(2), color, y, font(35), "top");
         }
 
-        let draw_line_dist_to_exit = (color, x1, y1, x2, y2) => {
-            this.plot_pane.draw_line(color, x1, y1, x2, y2, 2);
+        let draw_line_progress = (color, x1, y1, x2, y2, width) => {
+            this.plot_pane.draw_line(color, x1, y1, x2, y2, width);
         }
+
+        this.bar_pane.draw_left_text("Steps Done:", this.text_color, 0, font(40), "bottom");
+        this.plot_pane.draw_left_text("Distance to Exit:", this.text_color, 0, font(40), "bottom");
 
         for (let name in this.name_to_loc) {
             let loc = this.name_to_loc[name];
@@ -68,13 +73,24 @@ export class MazeStatsDrawer {
             draw_hbar_name(name, bar_color, loc);
             draw_hbar_steps(value, steps_bar_color, loc);
 
-            let [line_color, [x1, y1], [x2, y2]] = this.dist_to_exit[name];
-            draw_line_dist_to_exit(line_color, x1, y1, x2, y2);
+            let [line_color, [x1, y1], [x2, y2]] = this.steps_progress[name];
+            if (x1 != null) {
+                let line_progress_color = pSBC(-0.8, line_color);
+                draw_line_progress(line_progress_color, x1, y1, x2, y2, 2);
+            }
 
             let path_bar = this.path_bars[loc];
             if (path_bar != null) {
                 draw_hbar(path_bar[1], path_bar[2], loc);
                 draw_hbar_path(path_bar[1], path_bar[2], loc);
+            }
+
+            let path_progress = this.path_progress[name];
+            if (path_progress != null) {
+                let [line_color, [x1, y1], [x2, y2]] = path_progress;
+                if (x1 != null) {
+                    draw_line_progress(line_color, x1, y1, x2, y2, 5);
+                }
             }
         }
     }
@@ -100,12 +116,21 @@ export class MazeStatsDrawer {
         }
     }
 
-    update_dist_to_exit(name, step, value, color) {
-        let dist_to_exit = this.dist_to_exit[name];
-        if (dist_to_exit == null) {
-            this.dist_to_exit[name] = [color, [0, 1.0], [step, value]];
+    update_steps_progress(name, step, value, color) {
+        let progress = this.steps_progress[name];
+        if (progress == null) {
+            this.steps_progress[name] = [color, [null, null], [step, value]];
         } else {
-            this.dist_to_exit[name] = [color, dist_to_exit[2], [step, value]];
+            this.steps_progress[name] = [color, progress[2], [step, value]];
+        }
+    }
+
+    update_path_progress(name, step, value, color) {
+        let progress = this.path_progress[name];
+        if (progress == null) {
+            this.path_progress[name] = [color, [null, null], [step, value]];
+        } else {
+            this.path_progress[name] = [color, progress[2], [step, value]];
         }
     }
 }
@@ -114,14 +139,12 @@ class Pane {
     constructor(
         canvas,
         background_color,
-        font_name,
-        top_offset=0.15, 
-        right_offset=0.15,
-        bot_offset=0.15,
-        left_offset=0.15
+        top_offset, 
+        right_offset,
+        bot_offset,
+        left_offset
     ) {
         this.background_color = background_color;
-        this.font_name = font_name;
 
         this.canvas = canvas;
         this.context = this.canvas.getContext("2d");
@@ -198,10 +221,10 @@ class Pane {
     }
 
     draw_line(color, x1, y1, x2, y2, width) {
-        x1 *= this.width;
-        y1 *= this.height;
-        x2 *= this.width;
-        y2 *= this.height;
+        x1 = this.left_offset + (this.width - this.left_offset - this.right_offset) * x1;
+        x2 = this.left_offset + (this.width - this.left_offset - this.right_offset) * x2;
+        y1 = this.top_offset + (this.height - this.top_offset - this.bot_offset) * y1;
+        y2 = this.top_offset + (this.height - this.top_offset - this.bot_offset) * y2;
 
         this.context.strokeStyle = color;
         this.context.lineWidth = width;

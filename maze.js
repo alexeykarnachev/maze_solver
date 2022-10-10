@@ -14,6 +14,7 @@ export class Maze {
         this.n_cells = this.n_rows * this.n_cols;
         this.walls = Array(this.n_cells);
         this.dists = Array(this.n_cells);
+        this.true_diameter = 0;
     }
 
     reset() {
@@ -81,6 +82,7 @@ export class Maze {
                 for (let i = 0; i < queue.length; ++i) {
                     let cell = queue[i];
                     maze.dists[cell] = dist;
+                    maze.true_diameter = Math.max(maze.true_diameter, dist);
 
                     let doors = maze.get_cell_doors(cell);
                     for (let door of doors) {
@@ -169,7 +171,7 @@ export class Maze {
     }
 
     get_true_diameter() {
-        return this.dists[0];
+        return this.true_diameter;
     }
 
     remove_wall(cell, wall) {
