@@ -14,7 +14,6 @@ import {lerp} from "./utils.js";
 
 let FONT_NAME = "SourceCodePro"
 
-let N_ALGORITHMS = 4;
 let MIN_N_COLS = 16;
 let MIN_N_ROWS = 12;
 let MAX_N_COLS = 200;
@@ -35,10 +34,17 @@ let DFS_COLOR = "#fb4934";
 let BFS_COLOR = "#b8bb26";
 let DBS_COLOR = "#fabd2f";
 let ASTAR_COLOR = "#428588";
+let ALGORITHMS = [
+    ["DFS", DFS_COLOR, solve_maze_dfs],
+    ["BFS", BFS_COLOR, solve_maze_bfs],
+    ["DBS", DBS_COLOR, solve_maze_dbs],
+    ["A*", ASTAR_COLOR, solve_maze_astar]
+];
 
 let MAZE_CANVAS = document.getElementById("maze_canvas");
 let MAZE_CONTEXT = maze_canvas.getContext("2d");
 let CONTROL_PANE = new ControlPane(
+    ALGORITHMS,
     CONTROL_PANE_BACKGROUND_COLOR,
     CONTROL_PANE_BUTTON_COLOR, 
     CONTROL_PANE_SLIDER_COLOR,
@@ -57,9 +63,11 @@ async function main() {
 
     CONTROL_PANE.start_button.disabled = true;
     CONTROL_PANE.onstart = function() {
-        CONTROL_PANE.start_button.disabled = true;
-        CONTROL_PANE.generate_button.disabled = true;
-        start(maze);
+        if (CONTROL_PANE.get_active_algorithms().length > 0) {
+            CONTROL_PANE.start_button.disabled = true;
+            CONTROL_PANE.generate_button.disabled = true;
+            start(maze);
+        }
     }
 
     CONTROL_PANE.ongenerate = function() {
@@ -72,8 +80,9 @@ async function start(maze) {
     let maze_drawer = new MazeDrawer(maze, MAZE_CONTEXT, MAZE_BACKGROUND_COLOR, WALL_COLOR);
     await maze_drawer.draw_maze();
 
+    let active_algorithms = CONTROL_PANE.get_active_algorithms(); 
     let maze_stats_drawer = new MazeStatsDrawer(
-        N_ALGORITHMS,
+        active_algorithms.length,
         STATS_BACKGROUND_COLOR,
         STATS_TEXT_COLOR,
         FONT_NAME
@@ -85,14 +94,8 @@ async function start(maze) {
         maze_audio_player,
         ANIMATION_STEP_MS
     );
-    let dfs = await solve_maze_dfs(maze);
-    let bfs = await solve_maze_bfs(maze);
-    let dbs = await solve_maze_dbs(maze);
-    let astar = await solve_maze_astar(maze);
-    maze_animator.animate_solver_result("DFS", dfs, DFS_COLOR);
-    maze_animator.animate_solver_result("BFS", bfs, BFS_COLOR);
-    maze_animator.animate_solver_result("DBS", dbs, DBS_COLOR);
-    maze_animator.animate_solver_result("A*", astar, ASTAR_COLOR);
+
+    await CONTROL_PANE.start(maze_animator);
 }
 
 async function generate(maze) {

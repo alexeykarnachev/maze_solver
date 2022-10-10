@@ -1,8 +1,17 @@
 export class ControlPane {
-    constructor(background_color, button_color, slider_color, slider_thumb_color, text_color, font_name) {
+    constructor(
+        algorithms, // [[name, color, solver], ...]
+        background_color,
+        button_color,
+        slider_color,
+        slider_thumb_color,
+        text_color,
+        font_name
+    ) {
         this.size = 0.2;
         this.branch_p = 0.01;
         this.loop_p = 0.01;
+        this.started = false;
 
         this.ongenerate = function(){};
         this.onstart = function(){};
@@ -17,9 +26,21 @@ export class ControlPane {
         this.container = document.getElementById("control_pane_div");
         this.container.style.backgroundColor = background_color;
 
-        this.buttons_container = document.createElement("div");
-        this.generate_button = this.create_button("Generate", "ongenerate");
-        this.start_button = this.create_button("Start", "onstart");
+        this.control_buttons_container = document.createElement("div");
+        this.generate_button = this.create_control_button("Generate", "ongenerate");
+        this.start_button = this.create_control_button("Start", "onstart");
+
+        this.algorithm_buttons_container = document.createElement("div");
+        this.algorithm_selected = {};
+        this.algorithm_solver = {};
+        this.algorithm_color = {};
+        this.algorithm_buttons = [];
+        for (let [name, color, solver] of algorithms) {
+            this.algorithm_buttons.push(this.create_algorithm_button(name, color));
+            this.algorithm_selected[name] = false;
+            this.algorithm_solver[name] = solver;
+            this.algorithm_color[name] = color;
+        }
 
         this.sliders_container = document.createElement("div");
         this.sliders_container.style.width = "100%"
@@ -27,11 +48,41 @@ export class ControlPane {
         this.branches_slider = this.create_slider("Branches", "branch_p");
         this.loops_slider = this.create_slider("Loops", "loop_p");
 
-        this.container.appendChild(this.buttons_container);
+        this.container.appendChild(this.control_buttons_container);
         this.container.appendChild(this.sliders_container);
+        this.container.appendChild(this.algorithm_buttons_container);
     }
 
-    create_button(name, callback_name) {
+    get_active_algorithms() {
+        let algorithms = [];
+        for (name in this.algorithm_selected) {
+            if (this.algorithm_selected[name]) {
+                algorithms.push(name);
+            }
+        }
+        return algorithms;
+    }
+
+    async start(maze_animator) {
+        for (let button of this.algorithm_buttons) {
+            button.disabled = true;
+        }
+        this.started = true;
+        let algorithm_result = {};
+        for (name in this.algorithm_selected) {
+            if (this.algorithm_selected[name]) {
+                algorithm_result[name] = await this.algorithm_solver[name](maze_animator.drawer.maze);
+            }
+        }
+
+        for (name in this.algorithm_selected) {
+            if (this.algorithm_selected[name]) {
+                maze_animator.animate_solver_result(name, algorithm_result[name], this.algorithm_color[name]);
+            }
+        }
+    }
+
+    create_control_button(name, callback_name) {
         let div = document.createElement("div");
         let button = document.createElement("button");
 
@@ -49,7 +100,41 @@ export class ControlPane {
         }
 
         div.appendChild(button);
-        this.buttons_container.appendChild(div);
+        this.control_buttons_container.appendChild(div);
+
+        return button;
+    }
+
+    create_algorithm_button(name, color) {
+        let div = document.createElement("div");
+        let button = document.createElement("button");
+
+        div.style.display = "inline-block";
+        button.innerHTML = name;
+        button.style.fontFamily = this.font_name;
+        button.style.fontSize = "17px";
+        button.style.marginTop = "25px";
+        button.style.marginLeft = "1px";
+        button.style.color = this.background_color;
+        button.style.backgroundColor = color;
+        button.style.opacity = "0.3";
+
+        let pane = this;
+        button.onclick = function() {
+            if (pane.started) {
+                return;
+            }
+            if (!pane.algorithm_selected[name]) {
+                pane.algorithm_selected[name] = true;
+                button.style.opacity = "1.0";
+            } else {
+                pane.algorithm_selected[name] = false;
+                button.style.opacity = "0.3";
+            }
+        }
+
+        div.appendChild(button);
+        this.algorithm_buttons_container.appendChild(div);
 
         return button;
     }
