@@ -9,18 +9,15 @@ import {
     solve_maze_dbs,
     solve_maze_astar
 } from "./maze_solver.js";
+import {ControlPane} from "./control_pane.js";
 
-new FontFace(
-    'SourceCodePro',
-    'url(assets/fonts/Source_Code_Pro/static/SourceCodePro-Regular.ttf)'
-).load().then((font) => { document.fonts.add(font) });
 let FONT_NAME = "SourceCodePro"
 
-let N_COLS = 64 * 2;
-let N_ROWS = 48 * 2;
+let N_COLS = 64;
+let N_ROWS = 48;
 let BRANCH_P = 0.01;
 let LOOP_P = 0.01;
-
+let CONTROL_PANE_BACKGROUND_COLOR = "#1d2021";
 let MAZE_BACKGROUND_COLOR = "#928374";
 let STATS_BACKGROUND_COLOR = "#1d2021";
 let STATS_TEXT_COLOR = "#928374";
@@ -34,6 +31,11 @@ let ANIMATION_STEP_MS = 10.0;
 
 
 async function main() {
+    new FontFace(
+        'SourceCodePro',
+        'url(assets/fonts/Source_Code_Pro/static/SourceCodePro-Regular.ttf)'
+    ).load().then((font) => { document.fonts.add(font) });
+
     let n_algorithms = 4;
     let maze_canvas = document.getElementById("maze_canvas");
     let maze_context = maze_canvas.getContext("2d");
@@ -45,6 +47,14 @@ async function main() {
         STATS_TEXT_COLOR,
         FONT_NAME
     );
+
+    let control_pane = new ControlPane(CONTROL_PANE_BACKGROUND_COLOR);
+    control_pane.onstart = function() {
+        console.log("START");
+    }
+    control_pane.ongenerate = function() {
+        console.log("GENERATE");
+    }
 
     await maze.generate();
     maze_drawer.draw_maze();
