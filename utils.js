@@ -39,3 +39,7 @@ export function links_to_path(links) {
     path.push(0)
     return path;
 }
+
+export function lerp(x1, x2, p) {
+    return x1 + (x2 - x1) * p;
+}

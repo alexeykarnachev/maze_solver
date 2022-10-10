@@ -10,6 +10,7 @@ export class MazeAnimator {
     }
 
     async animate_solver_result(name, result, color) {
+        this.audio_player.start();
         await this.animate_history(name, result.history, color);
         await this.animate_path(name, result.path, color);
     }

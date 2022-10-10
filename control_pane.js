@@ -1,11 +1,18 @@
 export class ControlPane {
-    constructor(background_color) {
+    constructor(background_color, button_color, slider_color, slider_thumb_color, text_color, font_name) {
         this.size = 0.2;
         this.branch_p = 0.01;
         this.loop_p = 0.01;
 
         this.ongenerate = function(){};
         this.onstart = function(){};
+
+        this.background_color = background_color;
+        this.button_color = button_color;
+        this.slider_color = slider_color;
+        this.slider_thumb_color = slider_thumb_color;
+        this.text_color = text_color;
+        this.font_name = font_name;
 
         this.container = document.getElementById("control_pane_div");
         this.container.style.backgroundColor = background_color;
@@ -30,7 +37,11 @@ export class ControlPane {
 
         div.style.display = "inline-block";
         button.innerHTML = name;
+        button.style.fontFamily = this.font_name;
+        button.style.fontSize = "17px";
         button.style.margin = "5px";
+        button.style.color = this.text_color;
+        button.style.backgroundColor = this.button_color;
 
         let pane = this;
         button.onclick = function() {
@@ -49,21 +60,26 @@ export class ControlPane {
         let label = document.createElement("label");
         let span = document.createElement("span")
 
-        div.style.width = "90%";
+        div.style.width = "96%";
         div.style.marginLeft = "2%";
 
+        input.type = "range";
         input.style.width = "100%";
         input.style.marginTop = "2%";
-        input.type = "range";
+        input.style.background = this.slider_color;
+        input.style.setProperty('--slider_thumb_background', this.slider_thumb_color);
+
         input.min = 0;
         input.max = 0.99;
         input.step = 0.01;
         input.value = this[field];
 
         label.innerHTML = name;
-        label.style.fontSize = "16px";
+        label.style.marginTop = "-1%";
+        label.style.fontFamily = this.font_name;
+        label.style.fontSize = "17px";
         label.style.float = "right";
-        label.style.backgroundColor = "white";
+        label.style.color = this.text_color;
 
         span.innerHTML = ": " + this[field].toFixed(2);
 

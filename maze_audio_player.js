@@ -1,12 +1,23 @@
 export class MazeAudioPlayer {
-    constructor(maze, audio_context, oscillator_type, dist_type) {
+    constructor(maze, oscillator_type, dist_type) {
         this.maze = maze;
-        this.context = audio_context;
+        this.oscillator_type = oscillator_type;
         this.dist_type = dist_type;
 
+        this.context;
+        this.oscillator;
+        this.started = false;
+    }
+
+    start() {
+        if (this.started) {
+            return;
+        }
+        this.started = true;
+        this.context = new AudioContext();
         this.oscillator = this.context.createOscillator();
-        this.oscillator.type = oscillator_type;
         this.oscillator.start();
+        this.oscillator.type = this.oscillator_type;
         this.max_freq = 700;
     }
 

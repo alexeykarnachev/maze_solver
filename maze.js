@@ -6,23 +6,30 @@ export let OPPOSITE_WALL = {1: WALL.S, 2: WALL.W, 4: WALL.N, 8: WALL.E};
 export let WALLS = [WALL.N, WALL.E, WALL.S, WALL.W];
 
 export class Maze {
-    constructor(n_cols, n_rows, branch_p, loop_p) {
+    constructor() {
+        this.n_rows;
+        this.n_cols;
+        this.branch_p;
+        this.loop_p;
+        this.n_cells;
+        this.walls;
+        this.dists;
+        this.true_diameter;
+    }
+
+    async generate(n_rows, n_cols, branch_p, loop_p) {
+        branch_p = Math.min(0.99, branch_p);
+        loop_p = Math.min(0.99, loop_p);
+        
         this.n_rows = n_rows;
         this.n_cols = n_cols;
         this.branch_p = branch_p;
         this.loop_p = loop_p;
         this.n_cells = this.n_rows * this.n_cols;
-        this.walls = Array(this.n_cells);
-        this.dists = Array(this.n_cells);
+        this.walls = Array(this.n_cells).fill(15);
+        this.dists = Array(this.n_cells).fill(Infinity);
         this.true_diameter = 0;
-    }
 
-    reset() {
-        this.walls = this.walls.fill(15);
-        this.dists = this.dists.fill(Infinity);
-    }
-
-    async generate() {
         let visited = Array(this.n_cells).fill(false);
         let heads = [];
         let maze = this;
@@ -101,7 +108,6 @@ export class Maze {
             }
         }
 
-        this.reset()
         await walk(0);
         make_loops();
         calc_dists();
