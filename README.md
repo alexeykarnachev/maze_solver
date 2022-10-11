@@ -1,5 +1,6 @@
 # Maze Solver
 Comprehensive visualization of several path-finding algorithms.
+![thumbnail](./thumbnail.png)
 
 ## Quick Start
 Check it online:
