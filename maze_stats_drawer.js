@@ -49,13 +49,13 @@ export class MazeStatsDrawer {
         }
 
         let draw_hbar_steps = (value, color, loc) => {
-            let y = (loc + 1) / this.n_algorithms;
-            this.bar_pane.draw_right_text(value.toFixed(2), color, y, font(35), "bottom");
+            let y = (loc + 0.5) / this.n_algorithms;
+            this.bar_pane.draw_right_text(value.toFixed(2), color, y, font(35), "top");
         }
 
         let draw_hbar_path = (value, color, loc) => {
-            let y = loc / this.n_algorithms;
-            this.bar_pane.draw_right_text(value.toFixed(2), color, y, font(35), "top");
+            let y = (loc + 0.5) / this.n_algorithms;
+            this.bar_pane.draw_right_text(value.toFixed(2), color, y, font(35), "bottom");
         }
 
         let draw_line_progress = (color, x1, y1, x2, y2, width) => {
