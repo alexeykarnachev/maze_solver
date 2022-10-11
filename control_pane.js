@@ -44,9 +44,12 @@ export class ControlPane {
 
         this.sliders_container = document.createElement("div");
         this.sliders_container.style.width = "100%"
-        this.branches_slider = this.create_slider("Size", "size");
-        this.branches_slider = this.create_slider("Branches", "branch_p");
-        this.loops_slider = this.create_slider("Loops", "loop_p");
+        this.sliders = [
+            this.create_slider("Size", "size"),
+            this.create_slider("Branches", "branch_p"),
+            this.create_slider("Loops", "loop_p")
+        ];
+
 
         this.container.appendChild(this.control_buttons_container);
         this.container.appendChild(this.sliders_container);
@@ -66,6 +69,9 @@ export class ControlPane {
     async start(maze_animator) {
         for (let button of this.algorithm_buttons) {
             button.disabled = true;
+        }
+        for (let slider of this.sliders) {
+            slider.disabled = true;
         }
         this.started = true;
         let algorithm_result = {};
