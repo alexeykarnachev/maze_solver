@@ -3,22 +3,11 @@ export class MazeAudioPlayer {
         this.maze = maze;
         this.oscillator_type = oscillator_type;
         this.dist_type = dist_type;
-
-        this.context;
-        this.oscillator;
-        this.started = false;
-    }
-
-    start() {
-        if (this.started) {
-            return;
-        }
-        this.started = true;
         this.context = new AudioContext();
+
         this.oscillator = this.context.createOscillator();
-        this.oscillator.start();
         this.oscillator.type = this.oscillator_type;
-        this.max_freq = 700;
+        this.oscillator.start();
     }
 
     play_progress(cell, inverse_dist) {
@@ -26,12 +15,16 @@ export class MazeAudioPlayer {
         if (inverse_dist) {
             progress = 1 - progress;
         }
-        let freq = this.max_freq * progress;
+        let freq = Math.pow(25 * progress, 2.0) + 50;
         this.oscillator.frequency.value = freq;
         this.oscillator.connect(this.context.destination);    
     }
 
     stop() {
-        this.oscillator.disconnect();
+        let gain_node = this.context.createGain();
+        this.oscillator.connect(gain_node);
+        gain_node.connect(this.context.destination)
+        gain_node.gain.setTargetAtTime(0, this.context.currentTime, 0.015);
+        this.oscillator.disconnect(this.context.destination);    
     }
 }
