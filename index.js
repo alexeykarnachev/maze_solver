@@ -21,6 +21,7 @@ let MAX_N_ROWS = 150;
 let BRANCH_P = 0.01;
 let LOOP_P = 0.01;
 let ANIMATION_STEP_MS = 10.0;
+let DOCUMENT_BACKGROUND_COLOR = "black";
 let CONTROL_PANE_BACKGROUND_COLOR = "#1d2021";
 let CONTROL_PANE_BUTTON_COLOR = "#282828";
 let CONTROL_PANE_SLIDER_COLOR = "#665c54";
@@ -58,6 +59,7 @@ async function main() {
         'SourceCodePro',
         'url(assets/fonts/Source_Code_Pro/static/SourceCodePro-Regular.ttf)'
     ).load().then((font) => { document.fonts.add(font) });
+    document.body.style.background = DOCUMENT_BACKGROUND_COLOR;
 
     let maze = new Maze();
 
